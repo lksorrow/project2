@@ -2,7 +2,7 @@ import { useCart } from '../context/CartContext';
 import { useTheme } from '../context/ThemeContext';
 
 const CartItem = ({ item }) => {
-  const { updateQuantity, removeFromCart } = useCart();
+  const { updateQuantity, removeFromCart, personalDiscount, getItemTotalPrice } = useCart();
   const { theme } = useTheme();
 
   const handleQuantityChange = (newQuantity) => {
@@ -21,47 +21,98 @@ const CartItem = ({ item }) => {
     handleQuantityChange(item.quantity - 1);
   };
 
+  const finalDiscount = Math.max(item.discount || 0, personalDiscount);
+  const itemTotal = getItemTotalPrice(item);
+
   return (
     <div style={{
       display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      padding: '1rem',
-      borderBottom: `1px solid ${theme === 'dark' ? '#555' : '#eee'}`,
-      backgroundColor: theme === 'dark' ? '#444' : 'white',
-      color: theme === 'dark' ? 'white' : 'black'
-    }}>
+      gap: '1.5rem',
+      padding: '1.5rem',
+      borderBottom: `1px solid ${theme === 'dark' ? '#444' : '#f0f0f0'}`,
+      background: theme === 'dark' ? '#2a2a2a' : 'white',
+      transition: 'all 0.3s ease',
+      position: 'relative'
+    }}
+    onMouseEnter={(e) => {
+      e.currentTarget.style.background = theme === 'dark' ? '#333' : '#fafafa';
+    }}
+    onMouseLeave={(e) => {
+      e.currentTarget.style.background = theme === 'dark' ? '#2a2a2a' : 'white';
+    }}
+    >
+      <div style={{
+        width: '80px',
+        height: '80px',
+        background: 'linear-gradient(135deg, #e91e63 0%, #ff4081 100%)',
+        borderRadius: '12px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: '2rem',
+        color: 'white',
+        flexShrink: 0
+      }}>
+        
+      </div>
+
       <div style={{ flex: 1 }}>
-        <h4 style={{ margin: 0, marginBottom: '0.5rem' }}>{item.name}</h4>
-        <p style={{ 
-          margin: '0.25rem 0',
+        <h4 style={{
+          margin: '0 0 0.5rem 0',
+          fontSize: '1.2rem',
+          fontWeight: '600',
+          color: theme === 'dark' ? '#fff' : '#2d2d2d'
+        }}>
+          {item.name}
+        </h4>
+        <p style={{
+          margin: '0 0 0.5rem 0',
           color: theme === 'dark' ? '#ccc' : '#666',
           fontSize: '0.9rem'
         }}>
           {item.description}
         </p>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.5rem',
+          color: theme === 'dark' ? '#aaa' : '#888',
+          fontSize: '0.85rem'
+        }}>
+          <span>Время</span>
+          <span>{item.duration}</span>
+        </div>
       </div>
-      
-      <div style={{ 
-        display: 'flex', 
-        alignItems: 'center', 
-        gap: '1rem',
-        flex: 1,
-        justifyContent: 'center'
+
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '1rem'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.75rem',
+          background: theme === 'dark' ? '#333' : '#f5f5f5',
+          padding: '0.5rem',
+          borderRadius: '12px'
+        }}>
           <button
             onClick={handleDecrement}
             disabled={item.quantity <= 1}
             style={{
-              backgroundColor: item.quantity <= 1 ? '#ccc' : '#e91e63',
+              background: item.quantity <= 1 ? '#ccc' : '#e91e63',
               color: 'white',
               border: 'none',
-              width: '30px',
-              height: '30px',
-              borderRadius: '4px',
+              width: '32px',
+              height: '32px',
+              borderRadius: '8px',
               cursor: item.quantity <= 1 ? 'not-allowed' : 'pointer',
-              fontSize: '1rem'
+              fontSize: '1.2rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'all 0.3s ease'
             }}
           >
             -
@@ -70,7 +121,8 @@ const CartItem = ({ item }) => {
           <span style={{ 
             minWidth: '40px', 
             textAlign: 'center',
-            fontWeight: 'bold'
+            fontWeight: '600',
+            fontSize: '1.1rem'
           }}>
             {item.quantity}
           </span>
@@ -78,14 +130,24 @@ const CartItem = ({ item }) => {
           <button
             onClick={handleIncrement}
             style={{
-              backgroundColor: '#e91e63',
+              background: '#e91e63',
               color: 'white',
               border: 'none',
-              width: '30px',
-              height: '30px',
-              borderRadius: '4px',
+              width: '32px',
+              height: '32px',
+              borderRadius: '8px',
               cursor: 'pointer',
-              fontSize: '1rem'
+              fontSize: '1.2rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'all 0.3s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.transform = 'scale(1.1)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.transform = 'scale(1)';
             }}
           >
             +
@@ -93,21 +155,35 @@ const CartItem = ({ item }) => {
         </div>
       </div>
 
-      <div style={{ 
-        flex: 1, 
-        textAlign: 'right',
+      <div style={{
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'flex-end',
-        gap: '0.5rem'
+        gap: '0.5rem',
+        minWidth: '120px'
       }}>
+        {finalDiscount > 0 && (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            fontSize: '0.8rem',
+            color: '#4CAF50'
+          }}>
+            <span></span>
+            <span>-{finalDiscount}%</span>
+          </div>
+        )}
+
         <p style={{ 
-          fontWeight: 'bold',
+          fontWeight: '700',
           color: '#e91e63',
+          fontSize: '1.2rem',
           margin: 0
         }}>
-          {item.price * item.quantity} ₽
+          {itemTotal} ₽
         </p>
+
         <p style={{ 
           margin: 0,
           color: theme === 'dark' ? '#ccc' : '#666',
@@ -115,16 +191,26 @@ const CartItem = ({ item }) => {
         }}>
           {item.price} ₽/шт
         </p>
+
         <button
           onClick={() => removeFromCart(item.id)}
           style={{
-            backgroundColor: '#ff4444',
-            color: 'white',
-            border: 'none',
-            padding: '0.25rem 0.75rem',
-            borderRadius: '4px',
+            background: 'transparent',
+            color: '#ff4444',
+            border: `1px solid #ff4444`,
+            padding: '0.4rem 0.8rem',
+            borderRadius: '8px',
             cursor: 'pointer',
-            fontSize: '0.8rem'
+            fontSize: '0.8rem',
+            transition: 'all 0.3s ease'
+          }}
+          onMouseEnter={(e) => {
+            e.target.style.background = '#ff4444';
+            e.target.style.color = 'white';
+          }}
+          onMouseLeave={(e) => {
+            e.target.style.background = 'transparent';
+            e.target.style.color = '#ff4444';
           }}
         >
           Удалить

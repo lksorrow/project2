@@ -4,7 +4,7 @@ import { CartProvider } from './context/CartContext';
 import { AuthProvider } from './context/AuthContext';
 import Header from './components/Header';
 import Home from './pages/Home';
-import Products from './pages/Products';
+import Services from './pages/Services';
 import Cart from './pages/Cart';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
@@ -17,20 +17,20 @@ const ThemedApp = () => {
   return (
     <div className={`app ${theme}`} style={{
       minHeight: '100vh',
-      backgroundColor: theme === 'dark' ? '#1a1a1a' : '#ffffff',
-      color: theme === 'dark' ? '#ffffff' : '#000000',
-      transition: 'background-color 0.3s, color 0.3s'
+      background: theme === 'dark' 
+        ? 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)'
+        : 'linear-gradient(135deg, #f8f6f4 0%, #fff5f5 100%)',
+      color: theme === 'dark' ? '#ffffff' : '#2d2d2d',
+      transition: 'all 0.5s ease'
     }}>
       <Router>
         <Header />
         <main style={{
-          minHeight: 'calc(100vh - 80px)',
-          backgroundColor: 'inherit',
-          color: 'inherit'
+          minHeight: 'calc(100vh - 80px)'
         }}>
           <Routes>
             <Route path="/" element={<Home />} />
-            <Route path="/products" element={<Products />} />
+            <Route path="/services" element={<Services />} />
             <Route path="/cart" element={<Cart />} />
             <Route path="/login" element={<Login />} />
             <Route 

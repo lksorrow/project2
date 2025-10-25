@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, useEffect } from 'react';
+import { createContext, useContext, useReducer, useEffect } from 'react';
 
 const CartContext = createContext();
 
@@ -37,9 +37,9 @@ const cartReducer = (state, action) => {
         ...state,
         items: state.items.map(item =>
           item.id === action.payload.id
-            ? { ...item, quantity: Math.max(0, action.payload.quantity) }
+            ? { ...item, quantity: Math.max(1, action.payload.quantity) }
             : item
-        ).filter(item => item.quantity > 0)
+        )
       };
       break;
 
@@ -57,6 +57,13 @@ const cartReducer = (state, action) => {
       };
       break;
 
+    case 'discount':
+      newState = {
+        ...state,
+        personalDiscount: action.payload
+      };
+      break;
+
     default:
       newState = state;
   }
@@ -66,18 +73,17 @@ const cartReducer = (state, action) => {
 
 const loadCartFromStorage = () => {
   try {
-    const savedCart = localStorage.getItem('flowerShopCart');
-    if (savedCart) {
-      return JSON.parse(savedCart);
-    }
+    const savedCart = localStorage.getItem('flowerServicesCart');
+    return savedCart ? JSON.parse(savedCart) : [];
   } catch (error) {
-    console.error('error:', error);
+    console.error('Ошибка загрузки корзины:', error);
+    return [];
   }
-  return [];
 };
 
 const initialState = {
-  items: []
+  items: [],
+  personalDiscount: 0
 };
 
 export const useCart = () => {
@@ -92,58 +98,84 @@ export const CartProvider = ({ children }) => {
   const [state, dispatch] = useReducer(cartReducer, initialState);
 
   useEffect(() => {
-    const savedItems = loadCartFromStorage();
-    if (savedItems.length > 0) {
-      dispatch({ type: 'load', payload: savedItems });
+    const savedCart = loadCartFromStorage();
+    if (savedCart.length > 0) {
+      dispatch({ type: 'load', payload: savedCart });
     }
   }, []);
 
   useEffect(() => {
-    try {
-      localStorage.setItem('flowerShopCart', JSON.stringify(state.items));
-    } catch (error) {
-      console.error('error', error);
-    }
+    localStorage.setItem('flowerServicesCart', JSON.stringify(state.items));
   }, [state.items]);
 
-  const addToCart = (product) => {
-    dispatch({ type: 'add', payload: product });
+  const getItemTotalPrice = (item) => {
+    const itemDiscount = item.discount || 0;
+    const finalDiscount = Math.max(itemDiscount, state.personalDiscount);
+    const discountedPrice = item.price * (1 - finalDiscount / 100);
+    return discountedPrice * item.quantity;
   };
 
-  const removeFromCart = (productId) => {
-    dispatch({ type: 'remove', payload: productId });
+  const getSubtotal = () => {
+    return state.items.reduce((total, item) => {
+      return total + (item.price * item.quantity);
+    }, 0);
   };
 
-  const updateQuantity = (productId, quantity) => {
-    dispatch({ type: 'update', payload: { id: productId, quantity } });
-  };
-
-  const clearCart = () => {
-    dispatch({ type: 'clear' });
+  const getTotalDiscount = () => {
+    return state.items.reduce((total, item) => {
+      const itemDiscount = item.discount || 0;
+      const finalDiscount = Math.max(itemDiscount, state.personalDiscount);
+      return total + (item.price * item.quantity * (finalDiscount / 100));
+    }, 0);
   };
 
   const getTotalPrice = () => {
-    return state.items.reduce((total, item) => total + (item.price * item.quantity), 0);
+    return getSubtotal() - getTotalDiscount();
   };
 
   const getTotalItems = () => {
     return state.items.reduce((total, item) => total + item.quantity, 0);
   };
 
-  const getItemQuantity = (productId) => {
-    const item = state.items.find(item => item.id === productId);
+  const getItemQuantity = (serviceId) => {
+    const item = state.items.find(item => item.id === serviceId);
     return item ? item.quantity : 0;
+  };
+
+  const addToCart = (service) => {
+    dispatch({ type: 'add', payload: service });
+  };
+
+  const removeFromCart = (serviceId) => {
+    dispatch({ type: 'remove', payload: serviceId });
+  };
+
+  const updateQuantity = (serviceId, quantity) => {
+    dispatch({ type: 'update', payload: { id: serviceId, quantity } });
+  };
+
+  const clearCart = () => {
+    dispatch({ type: 'clear' });
+  };
+
+  const applyPersonalDiscount = (discount) => {
+    dispatch({ type: 'discount', payload: discount });
   };
 
   const value = {
     items: state.items,
+    personalDiscount: state.personalDiscount,
     addToCart,
     removeFromCart,
     updateQuantity,
     clearCart,
+    applyPersonalDiscount,
+    getSubtotal,
+    getTotalDiscount,
     getTotalPrice,
     getTotalItems,
-    getItemQuantity
+    getItemQuantity,
+    getItemTotalPrice
   };
 
   return (
